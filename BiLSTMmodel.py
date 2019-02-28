@@ -41,13 +41,13 @@ class bilstm_model():
         self.sequence_lengths = tf.placeholder(tf.int32, shape=[None], name="sequence_lengths")
 
         
-    def weight_variable(shape):
-        initial = tf.truncated_normal(shape, stddev=0.1)
-        return tf.Variable(initial)
+    #def weight_variable(shape):
+    #    initial = tf.truncated_normal(shape, stddev=0.1)
+    #    return tf.Variable(initial)
     
-    def bias_variable(shape):
-        initial = tf.constant(0.1, shape=shape)
-        return tf.Variable(initial)
+    #def bias_variable(shape):
+    #    initial = tf.constant(0.1, shape=shape)
+    #    return tf.Variable(initial)
     
     
     def bi_lstm_op(self):
@@ -55,8 +55,8 @@ class bilstm_model():
         with tf.variable_scope("bi-lstm"):
             _word_embeddings = tf.Variable(self.embeddings,
                                                dtype=tf.float32,
-                                               trainable=self.update_embedding)
-                                               #name="_word_embeddings")
+                                               trainable=self.update_embedding, #是否在训练过程中更新该变量
+                                               name="_word_embeddings")
             self.word_embeddings = tf.nn.embedding_lookup(params=_word_embeddings,
                                                          ids=self.word_ids,
                                                          name="word_embeddings")
@@ -64,12 +64,14 @@ class bilstm_model():
             #双向LSTM层
             cell_fw = LSTMCell(self.config.hidden_size) #前向
             cell_bw = LSTMCell(self.config.hidden_size) #后向
+            #shape (batchsize, timestep, hidden_size)
             (output_fw_seq, output_bw_seq), _ = tf.nn.bidirectional_dynamic_rnn(
                     cell_fw=cell_fw,
                     cell_bw=cell_bw,
                     inputs=self.word_embeddings,
                     sequence_length=self.sequence_lengths,
                     dtype=tf.float32)
+            #前向后向concat到一起获得最终输出
             output = tf.concat([output_fw_seq, output_bw_seq], axis=-1)  #最终输出
         
         with tf.variable_scope("proj"):
@@ -88,7 +90,7 @@ class bilstm_model():
             pred = tf.matmul(output, W) + b
 
             self.logits = tf.reshape(pred, [-1, s[1], self.config.class_num])
-            print(1)
+            #print(1)
     
     def loss_op(self):      
         #y_pred = self.logits  ##注意这里是调用了bi_lstm函数
