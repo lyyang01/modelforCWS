@@ -36,7 +36,6 @@ class bilstm_model():
     ##需要使用feed_dict  feed到模型中的真实的数据,由于还没传入，所以先用占位符定义
     def add_placeholders(self):
         self.word_ids = tf.placeholder(tf.int32, shape=[None, None])
-        #self.x=tf.placeholder(tf.int32, [self.config.batch_size, self.config.timestep_size])
         self.labels=tf.placeholder(tf.int32, [None, None])
         self.sequence_lengths = tf.placeholder(tf.int32, shape=[None], name="sequence_lengths")
 
@@ -93,17 +92,14 @@ class bilstm_model():
             #print(1)
     
     def loss_op(self):      
-        #y_pred = self.logits  ##注意这里是调用了bi_lstm函数
-        #correct_prediction = tf.equal(tf.cast(tf.argmax(y_pred, 1), tf.int32), tf.reshape(self.labels,[-1]))
-        #self.accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-        #self.cost = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(labels=tf.reshape(self.labels,[-1]), logits=y_pred))
+      
         losses = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=self.logits,
                                                                     labels=self.labels)
         mask = tf.sequence_mask(self.sequence_lengths)
         losses = tf.boolean_mask(losses, mask)
         self.cost = tf.reduce_mean(losses)
-        self.labels_softmax_ = tf.argmax(self.logits, axis=-1)
-        self.labels_softmax_ = tf.cast(self.labels_softmax_, tf.int32)
+        #self.labels_softmax_ = tf.argmax(self.logits, axis=-1)
+        #self.labels_softmax_ = tf.cast(self.labels_softmax_, tf.int32)
 
 #生成优化器并进行梯度下降计算
     def trainstep_op(self):       

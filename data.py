@@ -179,7 +179,7 @@ def batch_yield(data, batch_size, vocab, shuffle=False):
 #test_path = os.path.join('.', 'data_path', 'test_my_data')
 #test_data = read_corpus(test_path); test_size = len(test_data)
 #word2id = read_dictionary('vocab')
-
+#print(word2id)
 #batches = batch_yield(data, 3, word2id, shuffle=False)
 #for step, (seqs, labels) in enumerate(batches):
 #    word_ids, seq_len_list = pad_sequences(seqs, pad_mark=0)
