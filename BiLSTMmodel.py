@@ -87,6 +87,8 @@ class bilstm_model():
             s = tf.shape(output)
             output = tf.reshape(output, [-1, 2*self.config.hidden_size])
             pred = tf.matmul(output, W) + b
+            correct_prediction = tf.equal(tf.cast(tf.argmax(pred, 1), tf.int32), tf.reshape(self.labels, [-1]))
+            self.accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
             self.logits = tf.reshape(pred, [-1, s[1], self.config.class_num])
             #print(1)
@@ -130,18 +132,21 @@ class bilstm_model():
         #tf.Print(11)
         for step, (seqs, labels) in enumerate(batches):
             sys.stdout.write(' processing: {} batch / {} batches.'.format(step + 1, num_batches) + '\r')
+            sys.stdout.write('\n')
             step_num = epoch * num_batches + step + 1
             #tf.Print(step_num)
 
             feed_dict, _ = self.get_feed_dict(seqs, labels=labels)
-            _, loss_train, step_num_ = sess.run([self.train_op, self.cost, self.global_step],
+            _, loss_train, step_num_ ,accuracy= sess.run([self.train_op, self.cost, self.global_step, self.accuracy],
                                                          feed_dict=feed_dict)
             
             ####显示显示
             if step + 1 == 1 or (step + 1) % 30 == 0 or step + 1 == num_batches:
                 sys.stdout.write(
-                    '{} epoch {}, step {}, loss: {:.4}, global_step: {}'.format(start_time, epoch + 1, step + 1,
-                                                                             loss_train, step_num))
+                    '{} epoch {}, step {}, loss: {:.4}, global_step: {} acc: {:.4}'.format(start_time, epoch + 1, step + 1,
+                                                                           loss_train, step_num, accuracy))
+                sys.stdout.write('\n')
+
             ##这里需要保存模型
             
             

@@ -7,7 +7,7 @@ Created on Wed Feb 27 13:36:38 2019
 
 ##各个参数定义
 class config():
-    max_epoch = 5
+    max_epoch = 2
     #timestep_size = max_len=32
     keep_prob = 0.5
     batch_size = 32
