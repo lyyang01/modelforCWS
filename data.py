@@ -6,6 +6,11 @@ import codecs
 #定义tag2label = {"O": 0,
 #             "B": 1, "I": 2, "E": 3}
 
+tag2label = {"O": 0,
+             "B-PER": 1, "I-PER": 2,
+             "B-LOC": 3, "I-LOC": 4,
+             "B-ORG": 5, "I-ORG": 6
+             }
 
 def load_example(words): #词数组，得到x,y #用于训练
     y=[]
