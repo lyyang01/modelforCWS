@@ -9,9 +9,11 @@ import tensorflow as tf
 #from config import config
 from tensorflow.contrib import rnn
 import time,sys
-from data import  batch_yield,pad_sequences
+from data import  batch_yield,pad_sequences,tag2label
 from tensorflow.contrib.rnn import LSTMCell
-
+import os
+from eval import conlleval
+import logging
 '''
   For Chinese word segmentation
 '''
@@ -21,10 +23,14 @@ class bilstm_model():
     def __init__(self,embeddings, paths, vocab ,config):
         self.config=config
         self.embeddings=embeddings
-        #self.model_path = paths['model_path']
-        #self.tag2label=tag2label
+        self.model_path = paths['model_path']
+        self.tag2label=tag2label
         self.vocab = vocab
         self.update_embedding=True
+        self.logger = self.get_logger(paths['log_path'])
+        self.result_path = paths['result_path']
+
+
     
     def build_graph(self):
         self.add_placeholders()
@@ -100,8 +106,8 @@ class bilstm_model():
         mask = tf.sequence_mask(self.sequence_lengths)
         losses = tf.boolean_mask(losses, mask)
         self.cost = tf.reduce_mean(losses)
-        #self.labels_softmax_ = tf.argmax(self.logits, axis=-1)
-        #self.labels_softmax_ = tf.cast(self.labels_softmax_, tf.int32)
+        self.labels_softmax_ = tf.argmax(self.logits, axis=-1)
+        self.labels_softmax_ = tf.cast(self.labels_softmax_, tf.int32)
 
 #生成优化器并进行梯度下降计算
     def trainstep_op(self):       
@@ -112,7 +118,7 @@ class bilstm_model():
         grads_and_vars_clip = [[tf.clip_by_value(g, -self.config.clip_grad, self.config.clip_grad), v] for g, v in grads_and_vars] ##梯度截断
         self.train_op = optimizer.apply_gradients(grads_and_vars_clip, global_step=self.global_step)
             
-        
+    
 
 ###以上均为模型的定义。#########################################################################################
      ##初始化参数
@@ -144,12 +150,14 @@ class bilstm_model():
             if step + 1 == 1 or (step + 1) % 30 == 0 or step + 1 == num_batches:
                 sys.stdout.write(
                     '{} epoch {}, step {}, loss: {:.4}, global_step: {} acc: {:.4}'.format(start_time, epoch + 1, step + 1,
-                                                                           loss_train, step_num, accuracy))
+                                                                         loss_train, step_num, accuracy))
+                
                 sys.stdout.write('\n')
 
             ##这里需要保存模型
             
-            
+            if step + 1 == num_batches:
+                saver.save(sess, self.model_path, global_step=step_num)        
             
             
     def get_feed_dict(self, seqs, labels=None, lr=None, dropout=None):
@@ -182,8 +190,59 @@ class bilstm_model():
             for epoch in range(self.config.max_epoch):
                 self.run_one_epoch(sess, train_data, epoch, saver)
     
-        
-
+##测试      
+    def test(self, test_data):
+        saver = tf.train.Saver()
+        with tf.Session() as sess:
+            self.logger.info('=========== testing ===========')
+            model_file=tf.train.latest_checkpoint(self.model_path)
+            #model_file=os.path.join('D://modelforCWS//-596')
+            saver.restore(sess, model_file)  ##读入模型
+            label_list, seq_len_list = self.dev_one_epoch(sess, test_data)
+          
+            self.evaluate(label_list, seq_len_list, test_data)
     
+    def dev_one_epoch(self, sess, dev):
+      
+        label_list, seq_len_list = [], []
+        for seqs, labels in batch_yield(dev, self.config.batch_size, self.vocab, shuffle=False):
+            label_list_, seq_len_list_ = self.predict_one_batch(sess, seqs)
+            label_list.extend(label_list_)
+            seq_len_list.extend(seq_len_list_)
+        return label_list, seq_len_list
+    
+    def predict_one_batch(self, sess, seqs):
   
+        feed_dict, seq_len_list = self.get_feed_dict(seqs)
+        
+        label_list = sess.run(self.labels_softmax_, feed_dict=feed_dict)
+        return label_list, seq_len_list
     
+    def evaluate(self, label_list, seq_len_list, data, epoch=None):
+        
+        #label2tag = {}
+        #for tag, label in self.tag2label.items():
+        #    label2tag[label] = tag if label != 0 else label
+        
+        model_predict = []
+        for label_, (sent, tag) in zip(label_list, data):
+            
+            sent_res = []
+            for i in range(len(sent)):
+                sent_res.append([sent[i], tag[i], label_[i]])
+            model_predict.append(sent_res)
+        epoch_num = str(epoch+1) if epoch != None else 'test'
+        label_path = os.path.join(self.result_path, 'label_' + epoch_num)
+        metric_path = os.path.join(self.result_path, 'result_metric_' + epoch_num)
+        for _ in conlleval(model_predict, label_path, metric_path):
+            self.logger.info(_)
+    
+    def get_logger(self, filename):
+        logger = logging.getLogger('logger')
+        logger.setLevel(logging.DEBUG)
+        logging.basicConfig(format='%(message)s', level=logging.DEBUG)
+        handler = logging.FileHandler(filename)
+        handler.setLevel(logging.DEBUG)
+        handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s: %(message)s'))
+        logging.getLogger().addHandler(handler)
+        return logger
