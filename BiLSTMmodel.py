@@ -31,20 +31,27 @@ class bilstm_model():
         self.result_path = paths['result_path']
 
 
-    
+    def print_op(self):
+        self.a_print = tf.Print(self.logits,['logit_shape:',self.logits])
+        return self.a_print
+       
+        
+        
+        
     def build_graph(self):
         self.add_placeholders()
         self.bi_lstm_op()
         self.loss_op()
         self.trainstep_op()
         self.init_op()
+        self.print_op()
     
     ##需要使用feed_dict  feed到模型中的真实的数据,由于还没传入，所以先用占位符定义
     def add_placeholders(self):
         self.word_ids = tf.placeholder(tf.int32, shape=[None, None])
         self.labels=tf.placeholder(tf.int32, [None, None])
         self.sequence_lengths = tf.placeholder(tf.int32, shape=[None], name="sequence_lengths")
-
+        #self.a_print=tf.placeholder(tf.int32, [None, None])
         
     #def weight_variable(shape):
     #    initial = tf.truncated_normal(shape, stddev=0.1)
@@ -93,10 +100,14 @@ class bilstm_model():
             s = tf.shape(output)
             output = tf.reshape(output, [-1, 2*self.config.hidden_size])
             pred = tf.matmul(output, W) + b
-            correct_prediction = tf.equal(tf.cast(tf.argmax(pred, 1), tf.int32), tf.reshape(self.labels, [-1]))
-            self.accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-
             self.logits = tf.reshape(pred, [-1, s[1], self.config.class_num])
+            temp=tf.reshape(tf.argmax(self.logits, -1),[-1])
+            correct_prediction = tf.equal(tf.cast(temp, tf.int32), tf.reshape(self.labels, [-1]))
+
+
+            self.accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+            #self.a_print = tf.Print(self.logits,['logit_shape:',self.logits])
+
             #print(1)
     
     def loss_op(self):      
@@ -143,7 +154,8 @@ class bilstm_model():
             #tf.Print(step_num)
 
             feed_dict, _ = self.get_feed_dict(seqs, labels=labels)
-            _, loss_train, step_num_ ,accuracy= sess.run([self.train_op, self.cost, self.global_step, self.accuracy],
+           
+            _, loss_train, step_num_ ,accuracy= sess.run([self.train_op,  self.cost, self.global_step, self.accuracy],
                                                          feed_dict=feed_dict)
             
             ####显示显示
@@ -186,7 +198,6 @@ class bilstm_model():
         ##开始训练，运行一个session
         with tf.Session() as sess:
             sess.run(self.init_op)
-            #sess.run(self.print_op)
             for epoch in range(self.config.max_epoch):
                 self.run_one_epoch(sess, train_data, epoch, saver)
     
