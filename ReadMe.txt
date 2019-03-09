@@ -1,13 +1,16 @@
-config.py ÅäÖÃÎÄ¼ş
 
-data.py   Êı¾İ´¦Àí²¿·Ö
+config.py é…ç½®æ–‡ä»¶
 
-vocab   ¹¹½¨µÄ´Ê¿â
+data.py   æ•°æ®å¤„ç†éƒ¨åˆ†
 
-pku_training.utf8  ÑµÁ·Êı¾İ¼¯
+vocab   æ„å»ºçš„è¯åº“
 
-pku_test_gold.utf8 ²âÊÔÊı¾İ¼¯
+pku_training.utf8  è®­ç»ƒæ•°æ®é›†
 
-conlleval_rev.pl  ÆÀ²â¹¤¾ß
+pku_test_gold.utf8 æµ‹è¯•æ•°æ®é›†
 
-eval.py Ö÷ÒªĞ´µÄconlleval_revµÄÊ¹ÓÃº¯Êı
+conlleval_rev.pl  è¯„æµ‹å·¥å…·
+
+eval.py ä¸»è¦å†™çš„conlleval_revçš„ä½¿ç”¨å‡½æ•°
+
+è®­ç»ƒæˆ–æµ‹è¯•æ—¶ï¼Œç›´æ¥è¿è¡Œmain.pyå³å¯
